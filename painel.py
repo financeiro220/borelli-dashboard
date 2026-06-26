@@ -18,9 +18,9 @@ st.subheader("Acompanhamento operacional em tempo real")
 st.markdown("---")
 
 # =========================================================================
-# ⚠️ LINK DO GOOGLE DRIVE
+# ⚠️ LINK DO GOOGLE DRIVE CORRIGIDO (FORMATO /VIEW)
 # =========================================================================
-LINK_ORIGINAL_DRIVE = "https://docs.google.com/spreadsheets/d/1utUgrbSx6paqhPJL029eyMnW32KGt7sG/edit?usp=drive_link&ouid=114082588546446906708&rtpof=true&sd=true"
+LINK_ORIGINAL_DRIVE = "https://docs.google.com/spreadsheets/d/1utUgrbSx6paqhPJL029eyMnW32KGt7sG/view"
 
 # Extrator robusto de ID via Expressão Regular (Regex)
 try:
