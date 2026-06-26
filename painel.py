@@ -2,47 +2,76 @@ import streamlit as st
 import pandas as pd
 import warnings
 import os
+import requests
+import re
 from streamlit_autorefresh import st_autorefresh
 
 warnings.filterwarnings("ignore", category=UserWarning)
 
 st.set_page_config(page_title="Borelli Dashboard V2", layout="wide")
 
-# Atualização automática a cada 10 minutos
-st_autorefresh(interval=10 * 60 * 1000, key="datarefresh_v3")
+# Atualização automática a cada 10 minutos na tela do usuário
+st_autorefresh(interval=10 * 60 * 1000, key="datarefresh_nuvem")
 
-st.title("🍦 Gelateria Borelli - Dashboard de KPIs (V2)")
+st.title("🍦 Gelateria Borelli - Dashboard de KPIs (Nuvem)")
 st.subheader("Acompanhamento operacional em tempo real")
 st.markdown("---")
 
-# === CAMINHO APONTANDO PARA O GOOGLE DRIVE COMPARTILHADO ===
-arquivo = r"G:/Drives compartilhados/Rh - Financeiro/AUTOMAÇÃO PAINEL BORELLI/vendas.xlsx"
+# =========================================================================
+# ⚠️ LINK DO GOOGLE DRIVE
+# =========================================================================
+LINK_ORIGINAL_DRIVE = "https://docs.google.com/spreadsheets/d/1utUgrbSx6paqhPJL029eyMnW32KGt7sG/edit?usp=drive_link&ouid=114082588546446906708&rtpof=true&sd=true"
+
+# Extrator robusto de ID via Expressão Regular (Regex)
+try:
+    match = re.search(r"/d/([a-zA-Z0-9-_]+)", LINK_ORIGINAL_DRIVE)
+    if match:
+        file_id = match.group(1)
+        URL_DOWNLOAD_DIRETO = f"https://docs.google.com/spreadsheets/d/{file_id}/export?format=xlsx"
+    else:
+        st.error("Não foi possível encontrar o ID do arquivo no link fornecido.")
+        st.stop()
+except Exception as e:
+    st.error(f"Erro ao processar o link do Google Drive: {e}")
+    st.stop()
+
+# Nome temporário para o arquivo na nuvem
+arquivo_temporario = "vendas_nuvem.xlsx"
+
+@st.cache_data(ttl=60) # Reduzido para 1 minuto para facilitar testes imediatos
+def baixar_dados_do_drive(url):
+    try:
+        resposta = requests.get(url, timeout=20)
+        if resposta.status_code == 200:
+            with open(arquivo_temporario, "wb") as f:
+                f.write(resposta.content)
+            return True
+    except Exception:
+        return False
+    return False
+
+# Executa o download em background
+sucesso_download = baixar_dados_do_drive(URL_DOWNLOAD_DIRETO)
 
 try:
-    # 1. VALIDAÇÃO: Verifica se o arquivo existe
-    if not os.path.exists(arquivo):
-        st.info("⏳ Aguardando o robô gerar o primeiro relatório do dia no Google Drive...")
+    if not sucesso_download or not os.path.exists(arquivo_temporario):
+        st.info("⏳ Conectando ao servidor do Google Drive para buscar os dados atuais...")
     else:
-        # Abre o arquivo rapidinho em modo texto para checar o primeiro caractere (Proteção contra erro JSON)
-        with open(arquivo, "r", encoding="utf-8", errors="ignore") as f:
+        # Abre o arquivo para checar se o download trouxe um HTML/JSON de erro ou o Excel real
+        with open(arquivo_temporario, "r", encoding="utf-8", errors="ignore") as f:
             primeiro_char = f.read(1)
         
-        if primeiro_char == "{":
-            st.warning("⚠️ O sistema do Borelli gerou um arquivo corrompido (Erro do Servidor deles). O robô tentará baixar novamente no próximo ciclo de 10 minutos.")
+        if primeiro_char == "{" or primeiro_char == "<":
+            st.error("⚠️ O Google Drive retornou uma página de login ou erro em vez do arquivo Excel. Certifique-se de que o arquivo está configurado como 'Qualquer pessoa com o link pode ler'.")
         else:
-            # Lemos primeiro apenas uma linha para checar a estrutura do arquivo (Evita erro de colunas vazias)
-            df_teste = pd.read_excel(arquivo, engine="openpyxl", nrows=5)
+            df = pd.read_excel(arquivo_temporario, engine="openpyxl", header=None, skiprows=1)
             
-            # Se o arquivo tiver menos de 5 colunas, significa que está sem vendas (Relatório vazio do Borelli)
-            if df_teste.shape[1] < 20:
+            if df.shape[1] < 20:
                 st.markdown("### 🏪 Status Operacional")
-                st.info("✨ Sistema conectado ao Google Drive com sucesso!")
-                st.warning("🍦 Nenhuma venda registrada ainda. A loja ainda irá abrir ou está iniciando as atividades do dia!")
+                st.info("✨ Sistema em nuvem conectado ao Google Drive com sucesso!")
+                st.warning("🍦 Nenhuma venda registrada ainda hoje ou estrutura de colunas incompleta.")
             else:
-                # Se tiver dados, lê normalmente as 25 colunas
-                df = pd.read_excel(arquivo, engine="openpyxl", header=None, skiprows=1, usecols=range(25))
-                
-                # Atribuição manual dos nomes de coluna para blindar contra erros
+                df = df.iloc[:, :25]
                 df.columns = [
                     "IDLOJA", "LOJA", "CAIXA", "VENDA", "DATA/HORA", "TEMPO_ATEND", 
                     "COD_OPERADOR", "OPERADOR", "COD_PRODUTO", "PRODUTO", "VALOR", 
@@ -51,7 +80,6 @@ try:
                     "JUST_DESC", "JUST_CANC", "QUANTIDADE", "UND"
                 ]
                 
-                # Conversão dos valores numéricos
                 for col in ["VALOR", "QUANTIDADE"]:
                     df[col] = df[col].astype(str).str.replace(".", "", regex=False).str.replace(",", ".", regex=False).astype(float)
                     
@@ -123,4 +151,4 @@ try:
                     st.markdown("---")
 
 except Exception as e:
-    st.error(f"Erro ao processar o arquivo: {e}")
+    st.error(f"Erro ao processar o arquivo na nuvem: {e}")
