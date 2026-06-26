@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import warnings
+import requests
 from streamlit_autorefresh import st_autorefresh
 
 warnings.filterwarnings("ignore", category=UserWarning)
@@ -8,20 +9,20 @@ warnings.filterwarnings("ignore", category=UserWarning)
 st.set_page_config(page_title="Borelli Dashboard V2", layout="wide")
 
 # Atualização automática a cada 10 minutos na tela do usuário
-st_autorefresh(interval=10 * 60 * 1000, key="datarefresh_nuvem_blindado")
+st_autorefresh(interval=10 * 60 * 1000, key="datarefresh_xlsx_final_nuvem")
 
 st.title("🍦 Gelateria Borelli - Dashboard de KPIs (Nuvem)")
 st.subheader("Acompanhamento operacional em tempo real")
 st.markdown("---")
 
 # =========================================================================
-# LINK DE EXPORTAÇÃO DIRETA DO PANDAS (Substitui o download manual via código)
+# LINK DE EXPORTAÇÃO DIRETA DO EXCEL (BURLA BLOQUEIOS CORPORATIVOS)
 # =========================================================================
 FILE_ID = "1utUgrbSx6paqhPJL029eyMnW32KGt7sG"
 URL_EXCEL_DIRETO = f"https://docs.google.com/spreadsheets/d/{FILE_ID}/export?format=xlsx"
 
 try:
-    # O próprio Pandas abre o link simulando um navegador comum, burlado as travas do Workspace
+    # O próprio Pandas abre o link simulando um navegador comum, buscando o .xlsx enviado pelo robô
     df = pd.read_excel(URL_EXCEL_DIRETO, engine="openpyxl", header=None, skiprows=1)
     
     if df.shape[1] < 20:
@@ -109,5 +110,4 @@ try:
             st.markdown("---")
 
 except Exception as e:
-    st.error(f"Erro ao processar o arquivo Excel: {e}")
-    st.info("💡 Dica: Se o erro persistir, acesse as configurações de compartilhamento deste arquivo no Drive e garanta que ele não foi alterado para 'Restrito'.")
+    st.error(f"Erro ao processar o arquivo Excel na Nuvem: {e}")
