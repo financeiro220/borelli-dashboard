@@ -23,7 +23,7 @@ URL_RESOLVIDA = f"https://docs.google.com/spreadsheets/d/{FILE_ID}/gviz/tq?tqx=o
 
 try:
     # Lendo os dados como CSV através do motor de renderização pública do Google Sheets
-    df = pd.read_csv(URL_RESOLVISDA, header=None, skiprows=1)
+    df = pd.read_csv(URL_RESOLVIDA, header=None, skiprows=1)
     
     if df.shape[1] < 20:
         st.markdown("### 🏪 Status Operacional")
@@ -86,28 +86,3 @@ try:
                     st.metric(label="Itens Vendidos", value=f"{itens_t1:.0f} un", delta=f"{itens_t1 - t1_meta['itens']:.0f} vs Meta ({t1_meta['itens']})")
                 else:
                     st.info("Sem dados operacionais para o Turno 1.")
-                    
-            # --- TURNO 2 ---
-            with col_turno2:
-                st.markdown("### ⏱️ Turno 2 (16:31 às 22:30)")
-                t2_meta = metas["Turno 2 (16h31-22h30)"]
-                grupo_t2 = df_loja[df_loja["TURNO"] == "Turno 2 (16h31-22h30)"]
-                
-                if not grupo_t2.empty:
-                    fat_t2 = grupo_t2["VALOR"].sum()
-                    vendas_t2 = grupo_t2["VENDA"].nunique()
-                    itens_t2 = grupo_t2["QUANTIDADE"].sum()
-                    tk_t2 = fat_t2 / vendas_t2 if vendas_t2 > 0 else 0
-                    pa_t2 = itens_t2 / vendas_t2 if vendas_t2 > 0 else 0
-                    
-                    st.metric(label="Faturamento Total", value=f"R$ {fat_t2:,.2f}")
-                    st.metric(label="Ticket Médio", value=f"R$ {tk_t2:.2f}", delta=f"{tk_t2 - t2_meta['tk']:.2f} vs Meta ({t2_meta['tk']:.2f})")
-                    st.metric(label="PA (Produtos/Atend.)", value=f"{pa_t2:.2f}", delta=f"{pa_t2 - t2_meta['pa']:.2f} vs Meta ({t2_meta['pa']:.2f})")
-                    st.metric(label="Itens Vendidos", value=f"{itens_t2:.0f} un", delta=f"{itens_t2 - t2_meta['itens']:.0f} vs Meta ({t2_meta['itens']})")
-                else:
-                    st.info("Turno 2 em andamento ou sem dados registrados.")
-                    
-            st.markdown("---")
-
-except Exception as e:
-    st.error(f"Erro ao ler os dados transmitidos: {e}")
