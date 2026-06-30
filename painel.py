@@ -17,7 +17,7 @@ st_autorefresh(interval=10 * 60 * 1000, key="datarefresh_xlsx_gdrive_open")
 # =========================================================================
 col_titulo, col_filtro = st.columns([4, 1])
 with col_titulo:
-    st.title("🍦 Gelateria Borelli - Dashboard de KPIs (Nuvem)")
+    st.title("🍦 Gelateria Borelli - Dashboard")
     st.subheader("Acompanhamento operacional em tempo real")
 
 placeholder_filtro = col_filtro.empty()
@@ -73,13 +73,17 @@ try:
         ]
 
         # =====================================================================
-        # 🏷️ FILTRO DE LOJA: monta rótulo curto (última parte do nome) para
-        # cada loja, ex: "CUIABA - SHOPPING - PANTANAL" -> "Pantanal"
+        # 🏷️ FILTRO DE LOJA: monta rótulo curto (última palavra do nome) para
+        # cada loja, ex: "CUIABA - SHOPPING ESTACAO" -> "Estação"
         # =====================================================================
+        NOMES_CONHECIDOS = {
+            "ESTACAO": "Estação",
+            "PANTANAL": "Pantanal",
+        }
         rotulo_para_loja = {"Todas": None}
         for loja in todas_lojas:
-            partes = str(loja).split(" - ")
-            rotulo = partes[-1].strip().title() if len(partes) > 1 else str(loja).title()
+            ultima_palavra = str(loja).strip().split()[-1].upper()
+            rotulo = NOMES_CONHECIDOS.get(ultima_palavra, ultima_palavra.title())
             rotulo_para_loja[rotulo] = loja
 
         opcoes_rotulos = list(rotulo_para_loja.keys())
@@ -134,9 +138,9 @@ try:
                     pa_t1 = itens_t1 / vendas_t1 if vendas_t1 > 0 else 0
 
                     st.metric(label="Faturamento Total", value=f"R$ {fat_t1:,.2f}")
-                    st.metric(label="Clientes Atendidos", value=f"{vendas_t1}")
                     st.metric(label="Ticket Médio", value=f"R$ {tk_t1:.2f}", delta=f"{tk_t1 - t1_meta['tk']:.2f} vs Meta ({t1_meta['tk']:.2f})")
                     st.metric(label="PA (Produtos/Atend.)", value=f"{pa_t1:.2f}", delta=f"{pa_t1 - t1_meta['pa']:.2f} vs Meta ({t1_meta['pa']:.2f})")
+                    st.metric(label="Clientes Atendidos", value=f"{vendas_t1}")
                     st.metric(label="Itens Vendidos", value=f"{itens_t1:.0f} un", delta=f"{itens_t1 - t1_meta['itens']:.0f} vs Meta ({t1_meta['itens']})")
                 else:
                     st.info("Sem dados operacionais para o Turno 1.")
@@ -155,9 +159,9 @@ try:
                     pa_t2 = itens_t2 / vendas_t2 if vendas_t2 > 0 else 0
 
                     st.metric(label="Faturamento Total", value=f"R$ {fat_t2:,.2f}")
-                    st.metric(label="Clientes Atendidos", value=f"{vendas_t2}")
                     st.metric(label="Ticket Médio", value=f"R$ {tk_t2:.2f}", delta=f"{tk_t2 - t2_meta['tk']:.2f} vs Meta ({t2_meta['tk']:.2f})")
                     st.metric(label="PA (Produtos/Atend.)", value=f"{pa_t2:.2f}", delta=f"{pa_t2 - t2_meta['pa']:.2f} vs Meta ({t2_meta['pa']:.2f})")
+                    st.metric(label="Clientes Atendidos", value=f"{vendas_t2}")
                     st.metric(label="Itens Vendidos", value=f"{itens_t2:.0f} un", delta=f"{itens_t2 - t2_meta['itens']:.0f} vs Meta ({t2_meta['itens']})")
                 else:
                     st.info("Turno 2 em andamento ou sem dados registrados.")
