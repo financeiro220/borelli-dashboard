@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import warnings
+import os
 from streamlit_autorefresh import st_autorefresh
 
 warnings.filterwarnings("ignore", category=UserWarning)
@@ -24,15 +25,6 @@ st.markdown("""
     [data-testid="stMetricDelta"] {
         font-size: 0.9rem !important;
     }
-    /* Alinhamento e espaçamento do cabeçalho */
-    .header-container {
-        display: flex;
-        align-items: center;
-        margin-bottom: 20px;
-    }
-    .header-text {
-        margin-left: 20px;
-    }
     /* Faixa decorativa com as cores da Itália abaixo de cada loja */
     .bandeira-italia {
         height: 4px;
@@ -46,17 +38,20 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # =========================================================================
-# 🍦 CABEÇALHO COM LOGO OFICIAL INTEGRADA VIA URL PÚBLICA
+# 🍦 CABEÇALHO COMPATÍVEL COM LOGO LOCAL (NA RAIZ DO PROJETO)
 # =========================================================================
-# URL da imagem do logotipo Borelli enviado por você
-URL_LOGO_BORELLI = "https://lh3.googleusercontent.com/d/1utUgrbSx6paqhPJL029eyMnW32KGt7sG"
-
 col_logo, col_titulo = st.columns([1, 5])
+
 with col_logo:
-    # Renderiza a logo oficial diretamente da nuvem com tamanho otimizado
-    st.image(URL_LOGO_BORELLI, width=110)
+    # Procura o ficheiro logo_borelli.png na raiz do repositório
+    if os.path.exists("logo_borelli.png"):
+        st.image("logo_borelli.png", width=120)
+    else:
+        # Mostra apenas um espaço vazio elegante enquanto faz o upload do ficheiro correto
+        st.write("")
+
 with col_titulo:
-    st.title("Gelateria Borelli - Dashboard Operacional")
+    st.markdown("<h1 style='margin-top: 10px;'>Gelateria Borelli - Dashboard Operacional</h1>", unsafe_allow_html=True)
     st.markdown("<p style='color: #888888; margin-top: -15px;'>Acompanhamento de KPIs em tempo real • Sincronizado com Google Drive</p>", unsafe_allow_html=True)
 
 placeholder_filtro = st.empty()
