@@ -9,11 +9,6 @@ warnings.filterwarnings("ignore", category=UserWarning)
 # Configuração da página para garantir o layout correto
 st.set_page_config(page_title="Borelli Dashboard V2", layout="wide")
 
-# /!\ FORÇAR O STREAMLIT A INICIAR NO MODO ESCURO NATIVO
-# Nota: É altamente recomendável ter o arquivo .streamlit/config.toml configurado com:
-# [theme]
-# base="dark"
-
 # Atualização automática a cada 10 minutos na tela do usuário
 st_autorefresh(interval=10 * 60 * 1000, key="datarefresh_xlsx_gdrive_open")
 
@@ -54,20 +49,16 @@ st.markdown("""
 # =========================================================================
 # 🍦 CABEÇALHO COM LOGO MAIOR E TÍTULO EM VERDE
 # =========================================================================
-# Ajustada a proporção das colunas para dar mais espaço ao logotipo maior
 col_logo, col_titulo = st.columns([1.2, 4.8])
 
 with col_logo:
     # Procura o arquivo logo_borelli.png na raiz do repositório
     if os.path.exists("logo_borelli.png"):
-        # Aumentado o tamanho de 120 para 160 para dar mais destaque
         st.image("logo_borelli.png", width=160)
     else:
-        # Mostra apenas um espaço vazio elegante enquanto faz o upload na raiz do GitHub
         st.write("")
 
 with col_titulo:
-    # Título estilizado em verde usando a classe CSS criada acima
     st.markdown("<h1 class='titulo-verde'>Gelateria Borelli - Dashboard Operacional</h1>", unsafe_allow_html=True)
     st.markdown("<p style='color: #888888; margin-top: -10px;'>Acompanhamento de KPIs em tempo real • Sincronizado com Google Drive</p>", unsafe_allow_html=True)
 
@@ -110,6 +101,7 @@ try:
 
         df["TURNO"] = df["HORA_MINUTO"].apply(classificar_turno)
 
+        # Configuração das Metas Cadastradas por Turno
         metas = {
             "Turno 1 (11h-16h30)": {"tk": 30.00, "pa": 1.50, "itens": 50},
             "Turno 2 (16h31-22h30)": {"tk": 35.00, "pa": 1.65, "itens": 120}
@@ -177,16 +169,21 @@ try:
                     tk = fat/vds if vds > 0 else 0
                     pa = itns/vds if vds > 0 else 0
                     
+                    # Definição das metas dinâmicas do Turno 1 para exibição
+                    m_tk = metas['Turno 1 (11h-16h30)']['tk']
+                    m_pa = metas['Turno 1 (11h-16h30)']['pa']
+                    m_it = metas['Turno 1 (11h-16h30)']['itens']
+
                     # Linha 1 de KPIs (Faturamento, Ticket Médio, PA)
                     m1, m2, m3 = st.columns(3)
                     m1.metric(label="Faturamento Total", value=f"R$ {fat:,.2f}")
-                    m2.metric(label="Ticket Médio", value=f"R$ {tk:.2f}", delta=f"{tk - metas['Turno 1 (11h-16h30)']['tk']:.2f} vs Meta")
-                    m3.metric(label="PA (Prod/Atend)", value=f"{pa:.2f}", delta=f"{pa - metas['Turno 1 (11h-16h30)']['pa']:.2f} vs Meta")
+                    m2.metric(label="Ticket Médio", value=f"R$ {tk:.2f}", delta=f"{tk - m_tk:.2f} vs {m_tk:.2f}")
+                    m3.metric(label="PA (Prod/Atend)", value=f"{pa:.2f}", delta=f"{pa - m_pa:.2f} vs {m_pa:.2f}")
                     
                     # Linha 2 de KPIs (Atendimentos, Itens)
                     m4, m5, _ = st.columns(3)
                     m4.metric(label="Clientes Atendidos", value=f"{vds}")
-                    m5.metric(label="Itens Vendidos", value=f"{itns:.0f} un", delta=f"{itns - metas['Turno 1 (11h-16h30)']['itens']:.0f} vs Meta")
+                    m5.metric(label="Itens Vendidos", value=f"{itns:.0f} un", delta=f"{itns - m_it:.0f} vs {m_it}")
                 else: 
                     st.info("Aguardando lançamentos operacionais para o Turno 1.")
 
@@ -202,16 +199,21 @@ try:
                     tk = fat/vds if vds > 0 else 0
                     pa = itns/vds if vds > 0 else 0
                     
+                    # Definição das metas dinâmicas do Turno 2 para exibição
+                    m_tk = metas['Turno 2 (16h31-22h30)']['tk']
+                    m_pa = metas['Turno 2 (16h31-22h30)']['pa']
+                    m_it = metas['Turno 2 (16h31-22h30)']['itens']
+
                     # Linha 1 de KPIs
                     m1, m2, m3 = st.columns(3)
                     m1.metric(label="Faturamento Total", value=f"R$ {fat:,.2f}")
-                    m2.metric(label="Ticket Médio", value=f"R$ {tk:.2f}", delta=f"{tk - metas['Turno 2 (16h31-22h30)']['tk']:.2f} vs Meta")
-                    m3.metric(label="PA (Prod/Atend)", value=f"{pa:.2f}", delta=f"{pa - metas['Turno 2 (16h31-22h30)']['pa']:.2f} vs Meta")
+                    m2.metric(label="Ticket Médio", value=f"R$ {tk:.2f}", delta=f"{tk - m_tk:.2f} vs {m_tk:.2f}")
+                    m3.metric(label="PA (Prod/Atend)", value=f"{pa:.2f}", delta=f"{pa - m_pa:.2f} vs {m_pa:.2f}")
                     
                     # Linha 2 de KPIs
                     m4, m5, _ = st.columns(3)
                     m4.metric(label="Clientes Atendidos", value=f"{vds}")
-                    m5.metric(label="Itens Vendidos", value=f"{itns:.0f} un", delta=f"{itns - metas['Turno 2 (16h31-22h30)']['itens']:.0f} vs Meta")
+                    m5.metric(label="Itens Vendidos", value=f"{itns:.0f} un", delta=f"{itns - m_it:.0f} vs {m_it}")
                 else: 
                     st.info("Turno 2 em andamento ou aguardando sincronização de dados.")
             st.write("")
