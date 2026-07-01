@@ -88,51 +88,43 @@ try:
 
         opcoes_rotulos = list(rotulo_para_loja.keys())
 
-        # Senha exigida toda vez que o usuário tentar trocar o filtro de loja.
-        SENHA_FILTRO = "borelli@2026"
+        # Senha exigida toda vez que o usuário tentar trocar o filtro de loja
+        # (inclusive ao voltar/ir para "Todas").
+        SENHA_FILTRO = "borelli2026"
 
         # "ativo" é o filtro realmente aplicado nos dados.
-        # "loja_filtro_widget" é apenas o que está selecionado visualmente no botão,
-        # que só passa a valer depois que a senha correta for confirmada.
         if "loja_filtro_ativo" not in st.session_state:
             st.session_state.loja_filtro_ativo = "Todas"
         if st.session_state.loja_filtro_ativo not in opcoes_rotulos:
             st.session_state.loja_filtro_ativo = "Todas"
 
-        # Se um cancelamento pediu reset do widget, aplica isso ANTES de criar o widget.
-        if st.session_state.get("_resetar_widget_filtro"):
-            st.session_state["loja_filtro_widget"] = st.session_state.loja_filtro_ativo
-            st.session_state.pop("senha_filtro_texto", None)
-            st.session_state["_resetar_widget_filtro"] = False
-
-        if "loja_filtro_widget" not in st.session_state:
-            st.session_state["loja_filtro_widget"] = st.session_state.loja_filtro_ativo
+        # "pendente" é o botão que o usuário acabou de clicar, aguardando confirmação de senha.
+        if "loja_filtro_pendente" not in st.session_state:
+            st.session_state.loja_filtro_pendente = None
 
         with placeholder_filtro.container():
             st.caption("Filtrar loja")
-            # st.segmented_control existe a partir do Streamlit 1.36; em versões
-            # mais antigas cai automaticamente para um radio horizontal equivalente.
-            if hasattr(st, "segmented_control"):
-                selecionado = st.segmented_control(
-                    "Filtrar loja",
-                    options=opcoes_rotulos,
-                    key="loja_filtro_widget",
-                    label_visibility="collapsed",
-                )
-                if not selecionado:
-                    selecionado = st.session_state.loja_filtro_ativo
-            else:
-                selecionado = st.radio(
-                    "Filtrar loja",
-                    opcoes_rotulos,
-                    key="loja_filtro_widget",
-                    label_visibility="collapsed",
-                )
 
-            # Se a seleção visual for diferente do filtro realmente aplicado,
-            # pede a senha antes de liberar a troca.
-            if selecionado != st.session_state.loja_filtro_ativo:
-                st.warning(f"🔒 Senha necessária para filtrar '{selecionado}'")
+            colunas_botoes = st.columns(len(opcoes_rotulos))
+            for i, rotulo in enumerate(opcoes_rotulos):
+                is_ativo = rotulo == st.session_state.loja_filtro_ativo
+                with colunas_botoes[i]:
+                    # Botão do filtro ativo aparece destacado (type="primary"); os demais neutros.
+                    if st.button(
+                        rotulo,
+                        key=f"btn_filtro_{rotulo}",
+                        type="primary" if is_ativo else "secondary",
+                        use_container_width=True,
+                    ):
+                        if rotulo != st.session_state.loja_filtro_ativo:
+                            st.session_state.loja_filtro_pendente = rotulo
+                            st.session_state.pop("senha_filtro_texto", None)
+
+            # Enquanto houver uma troca pendente (qualquer destino, incluindo "Todas"),
+            # exige senha antes de aplicar.
+            if st.session_state.loja_filtro_pendente is not None:
+                pendente = st.session_state.loja_filtro_pendente
+                st.warning(f"🔒 Senha necessária para filtrar '{pendente}'")
                 senha_digitada = st.text_input(
                     "Senha", type="password", key="senha_filtro_texto", label_visibility="collapsed"
                 )
@@ -140,14 +132,16 @@ try:
                 with col_ok:
                     if st.button("Confirmar", key="btn_confirma_filtro", use_container_width=True):
                         if senha_digitada == SENHA_FILTRO:
-                            st.session_state.loja_filtro_ativo = selecionado
+                            st.session_state.loja_filtro_ativo = pendente
+                            st.session_state.loja_filtro_pendente = None
                             st.session_state.pop("senha_filtro_texto", None)
                             st.rerun()
                         else:
                             st.error("Senha incorreta.")
                 with col_cancel:
                     if st.button("Cancelar", key="btn_cancela_filtro", use_container_width=True):
-                        st.session_state["_resetar_widget_filtro"] = True
+                        st.session_state.loja_filtro_pendente = None
+                        st.session_state.pop("senha_filtro_texto", None)
                         st.rerun()
 
         loja_escolhida = rotulo_para_loja[st.session_state.loja_filtro_ativo]
