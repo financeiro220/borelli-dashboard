@@ -9,14 +9,27 @@ warnings.filterwarnings("ignore", category=UserWarning)
 # Configuração da página para garantir o layout correto
 st.set_page_config(page_title="Borelli Dashboard V2", layout="wide")
 
+# /!\ FORÇAR O STREAMLIT A INICIAR NO MODO ESCURO NATIVO
+# Nota: É altamente recomendável ter o arquivo .streamlit/config.toml configurado com:
+# [theme]
+# base="dark"
+
 # Atualização automática a cada 10 minutos na tela do usuário
 st_autorefresh(interval=10 * 60 * 1000, key="datarefresh_xlsx_gdrive_open")
 
 # =========================================================================
-# 🎨 ESTILIZAÇÃO CUSTOMIZADA PARA MODO ESCURO (DARK MODE)
+# 🎨 ESTILIZAÇÃO CUSTOMIZADA PARA MODO ESCURO (DARK MODE) E CORES DO TÍTULO
 # =========================================================================
 st.markdown("""
     <style>
+    /* Altera o título principal para a cor verde oficial da marca */
+    .titulo-verde {
+        color: #009246 !important;
+        font-weight: bold !important;
+        margin-top: 10px !important;
+        margin-bottom: 5px !important;
+    }
+    
     /* Remove fundos brancos e força o design dark elegante */
     [data-testid="stMetricValue"] {
         font-size: 1.8rem !important;
@@ -25,6 +38,7 @@ st.markdown("""
     [data-testid="stMetricDelta"] {
         font-size: 0.9rem !important;
     }
+    
     /* Faixa decorativa com as cores da Itália abaixo de cada loja */
     .bandeira-italia {
         height: 4px;
@@ -38,21 +52,24 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # =========================================================================
-# 🍦 CABEÇALHO COMPATÍVEL COM LOGO LOCAL (NA RAIZ DO PROJETO)
+# 🍦 CABEÇALHO COM LOGO MAIOR E TÍTULO EM VERDE
 # =========================================================================
-col_logo, col_titulo = st.columns([1, 5])
+# Ajustada a proporção das colunas para dar mais espaço ao logotipo maior
+col_logo, col_titulo = st.columns([1.2, 4.8])
 
 with col_logo:
-    # Procura o ficheiro logo_borelli.png na raiz do repositório
+    # Procura o arquivo logo_borelli.png na raiz do repositório
     if os.path.exists("logo_borelli.png"):
-        st.image("logo_borelli.png", width=120)
+        # Aumentado o tamanho de 120 para 160 para dar mais destaque
+        st.image("logo_borelli.png", width=160)
     else:
-        # Mostra apenas um espaço vazio elegante enquanto faz o upload do ficheiro correto
+        # Mostra apenas um espaço vazio elegante enquanto faz o upload na raiz do GitHub
         st.write("")
 
 with col_titulo:
-    st.markdown("<h1 style='margin-top: 10px;'>Gelateria Borelli - Dashboard Operacional</h1>", unsafe_allow_html=True)
-    st.markdown("<p style='color: #888888; margin-top: -15px;'>Acompanhamento de KPIs em tempo real • Sincronizado com Google Drive</p>", unsafe_allow_html=True)
+    # Título estilizado em verde usando a classe CSS criada acima
+    st.markdown("<h1 class='titulo-verde'>Gelateria Borelli - Dashboard Operacional</h1>", unsafe_allow_html=True)
+    st.markdown("<p style='color: #888888; margin-top: -10px;'>Acompanhamento de KPIs em tempo real • Sincronizado com Google Drive</p>", unsafe_allow_html=True)
 
 placeholder_filtro = st.empty()
 st.write("")
