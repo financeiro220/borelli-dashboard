@@ -11,23 +11,18 @@ st.set_page_config(page_title="Borelli Dashboard V2", layout="wide")
 st_autorefresh(interval=10 * 60 * 1000, key="datarefresh_xlsx_gdrive_open")
 
 # =========================================================================
-# CABEÇALHO: título à esquerda + filtro de loja reservado à direita
-# (o conteúdo do filtro só é preenchido depois que os dados carregam,
-# mas a posição/layout já fica reservada aqui em cima)
+# CABEÇALHO E FILTROS: Layout limpo e espaçado
 # =========================================================================
-col_titulo, col_filtro = st.columns([4, 1])
-with col_titulo:
-    st.title("🍦 Gelateria Borelli - Dashboard")
-    st.subheader("Acompanhamento operacional em tempo real")
+st.title("🍦 Gelateria Borelli - Dashboard de KPIs")
+st.subheader("Acompanhamento operacional em tempo real")
 
-placeholder_filtro = col_filtro.empty()
+placeholder_filtro = st.empty()
 st.markdown("---")
 
 # =========================================================================
 # LINK CORRIGIDO DE VISUALIZAÇÃO PÚBLICA (BURLE OS BLOQUEIOS CORPORATIVOS)
 # =========================================================================
 FILE_ID = "1utUgrbSx6paqhPJL029eyMnW32KGt7sG"
-# Usando a API de Query do Google, que transforma qualquer .xlsx em dados limpos na nuvem
 URL_RESOLVIDA = f"https://docs.google.com/spreadsheets/d/{FILE_ID}/gviz/tq?tqx=out:csv"
 
 try:
@@ -48,6 +43,7 @@ try:
             "JUST_DESC", "JUST_CANC", "QUANTIDADE", "UND"
         ]
 
+        # Tratamento de dados otimizado
         for col in ["VALOR", "QUANTIDADE"]:
             df[col] = df[col].astype(str).str.replace(".", "", regex=False).str.replace(",", ".", regex=False).astype(float)
 
@@ -73,43 +69,35 @@ try:
         ]
 
         # =====================================================================
-        # 🏷️ FILTRO DE LOJA: monta rótulo curto (última palavra do nome) para
-        # cada loja, ex: "CUIABA - SHOPPING ESTACAO" -> "Estação"
+        # 🏷️ TRATAMENTO DOS FILTROS DE LOJA
         # =====================================================================
         NOMES_CONHECIDOS = {
             "ESTACAO": "Estação",
             "PANTANAL": "Pantanal",
         }
-        rotulo_para_loja = {"Todas": None}
+        rotulo_para_loja = {"Todas as Lojas": None}
         for loja in todas_lojas:
             ultima_palavra = str(loja).strip().split()[-1].upper()
             rotulo = NOMES_CONHECIDOS.get(ultima_palavra, ultima_palavra.title())
             rotulo_para_loja[rotulo] = loja
 
         opcoes_rotulos = list(rotulo_para_loja.keys())
-
-        # Senha exigida toda vez que o usuário tentar trocar o filtro de loja
-        # (inclusive ao voltar/ir para "Todas").
         SENHA_FILTRO = "borelli2026"
 
-        # "ativo" é o filtro realmente aplicado nos dados.
         if "loja_filtro_ativo" not in st.session_state:
-            st.session_state.loja_filtro_ativo = "Todas"
+            st.session_state.loja_filtro_ativo = "Todas as Lojas"
         if st.session_state.loja_filtro_ativo not in opcoes_rotulos:
-            st.session_state.loja_filtro_ativo = "Todas"
+            st.session_state.loja_filtro_ativo = "Todas as Lojas"
 
-        # "pendente" é o botão que o usuário acabou de clicar, aguardando confirmação de senha.
         if "loja_filtro_pendente" not in st.session_state:
             st.session_state.loja_filtro_pendente = None
 
+        # Renderização dos botões de filtro com largura total expandida
         with placeholder_filtro.container():
-            st.caption("Filtrar loja")
-
             colunas_botoes = st.columns(len(opcoes_rotulos))
             for i, rotulo in enumerate(opcoes_rotulos):
                 is_ativo = rotulo == st.session_state.loja_filtro_ativo
                 with colunas_botoes[i]:
-                    # Botão do filtro ativo aparece destacado (type="primary"); os demais neutros.
                     if st.button(
                         rotulo,
                         key=f"btn_filtro_{rotulo}",
@@ -120,17 +108,19 @@ try:
                             st.session_state.loja_filtro_pendente = rotulo
                             st.session_state.pop("senha_filtro_texto", None)
 
-            # Enquanto houver uma troca pendente (qualquer destino, incluindo "Todas"),
-            # exige senha antes de aplicar.
+            # Validação segura da Senha
             if st.session_state.loja_filtro_pendente is not None:
                 pendente = st.session_state.loja_filtro_pendente
-                st.warning(f"🔒 Senha necessária para filtrar '{pendente}'")
-                senha_digitada = st.text_input(
-                    "Senha", type="password", key="senha_filtro_texto", label_visibility="collapsed"
-                )
-                col_ok, col_cancel = st.columns(2)
+                st.write("")
+                col_txt, col_ok, col_cancel = st.columns([2, 1, 1])
+                with col_txt:
+                    senha_digitada = st.text_input(
+                        f"🔒 Digite a senha para filtrar por '{pendente}':", type="password", key="senha_filtro_texto"
+                    )
                 with col_ok:
-                    if st.button("Confirmar", key="btn_confirma_filtro", use_container_width=True):
+                    st.write("") # Alinhamento vertical
+                    st.write("") 
+                    if st.button("Confirmar", key="btn_confirma_filtro", type="primary", use_container_width=True):
                         if senha_digitada == SENHA_FILTRO:
                             st.session_state.loja_filtro_ativo = pendente
                             st.session_state.loja_filtro_pendente = None
@@ -139,6 +129,8 @@ try:
                         else:
                             st.error("Senha incorreta.")
                 with col_cancel:
+                    st.write("") # Alinhamento vertical
+                    st.write("")
                     if st.button("Cancelar", key="btn_cancela_filtro", use_container_width=True):
                         st.session_state.loja_filtro_pendente = None
                         st.session_state.pop("senha_filtro_texto", None)
@@ -148,15 +140,17 @@ try:
         lojas = [loja_escolhida] if loja_escolhida is not None else todas_lojas
         # =====================================================================
 
+        # Renderização Dinâmica das Lojas Filtradas
         for loja in lojas:
-            st.header(f"📍 {loja}")
-
-            col_turno1, col_turno2 = st.columns(2)
+            st.markdown(f"## 📍 {loja}")
             df_loja = df[df["LOJA"] == loja]
+
+            # Divisão lateral dos turnos
+            col_turno1, col_turno2 = st.columns(2)
 
             # --- TURNO 1 ---
             with col_turno1:
-                st.markdown("### ⏱️ Turno 1 (11:00 às 16:30)")
+                st.markdown("#### ⏱️ Turno 1 (11:00 às 16:30)")
                 t1_meta = metas["Turno 1 (11h-16h30)"]
                 grupo_t1 = df_loja[df_loja["TURNO"] == "Turno 1 (11h-16h30)"]
 
@@ -167,17 +161,21 @@ try:
                     tk_t1 = fat_t1 / vendas_t1 if vendas_t1 > 0 else 0
                     pa_t1 = itens_t1 / vendas_t1 if vendas_t1 > 0 else 0
 
-                    st.metric(label="Faturamento Total", value=f"R$ {fat_t1:,.2f}")
-                    st.metric(label="Ticket Médio", value=f"R$ {tk_t1:.2f}", delta=f"{tk_t1 - t1_meta['tk']:.2f} vs Meta ({t1_meta['tk']:.2f})")
-                    st.metric(label="PA (Produtos/Atend.)", value=f"{pa_t1:.2f}", delta=f"{pa_t1 - t1_meta['pa']:.2f} vs Meta ({t1_meta['pa']:.2f})")
-                    st.metric(label="Clientes Atendidos", value=f"{vendas_t1}")
-                    st.metric(label="Itens Vendidos", value=f"{itens_t1:.0f} un", delta=f"{itens_t1 - t1_meta['itens']:.0f} vs Meta ({t1_meta['itens']})")
+                    # KPIs Organizandos Horizontalmente para economizar espaço visual
+                    m1, m2, m3 = st.columns(3)
+                    m1.metric(label="Faturamento Total", value=f"R$ {fat_t1:,.2f}")
+                    m2.metric(label="Ticket Médio", value=f"R$ {tk_t1:.2f}", delta=f"{tk_t1 - t1_meta['tk']:.2f} vs Meta")
+                    m3.metric(label="PA (Prod/Atend.)", value=f"{pa_t1:.2f}", delta=f"{pa_t1 - t1_meta['pa']:.2f} vs Meta")
+                    
+                    m4, m5, _ = st.columns(3)
+                    m4.metric(label="Clientes Atendidos", value=f"{vendas_t1}")
+                    m5.metric(label="Itens Vendidos", value=f"{itens_t1:.0f} un", delta=f"{itens_t1 - t1_meta['itens']:.0f} vs Meta")
                 else:
                     st.info("Sem dados operacionais para o Turno 1.")
 
             # --- TURNO 2 ---
             with col_turno2:
-                st.markdown("### ⏱️ Turno 2 (16:31 às 22:30)")
+                st.markdown("#### ⏱️ Turno 2 (16:31 às 22:30)")
                 t2_meta = metas["Turno 2 (16h31-22h30)"]
                 grupo_t2 = df_loja[df_loja["TURNO"] == "Turno 2 (16h31-22h30)"]
 
@@ -188,11 +186,15 @@ try:
                     tk_t2 = fat_t2 / vendas_t2 if vendas_t2 > 0 else 0
                     pa_t2 = itens_t2 / vendas_t2 if vendas_t2 > 0 else 0
 
-                    st.metric(label="Faturamento Total", value=f"R$ {fat_t2:,.2f}")
-                    st.metric(label="Ticket Médio", value=f"R$ {tk_t2:.2f}", delta=f"{tk_t2 - t2_meta['tk']:.2f} vs Meta ({t2_meta['tk']:.2f})")
-                    st.metric(label="PA (Produtos/Atend.)", value=f"{pa_t2:.2f}", delta=f"{pa_t2 - t2_meta['pa']:.2f} vs Meta ({t2_meta['pa']:.2f})")
-                    st.metric(label="Clientes Atendidos", value=f"{vendas_t2}")
-                    st.metric(label="Itens Vendidos", value=f"{itens_t2:.0f} un", delta=f"{itens_t2 - t2_meta['itens']:.0f} vs Meta ({t2_meta['itens']})")
+                    # KPIs Organizandos Horizontalmente
+                    m1, m2, m3 = st.columns(3)
+                    m1.metric(label="Faturamento Total", value=f"R$ {fat_t2:,.2f}")
+                    m2.metric(label="Ticket Médio", value=f"R$ {tk_t2:.2f}", delta=f"{tk_t2 - t2_meta['tk']:.2f} vs Meta")
+                    m3.metric(label="PA (Prod/Atend.)", value=f"{pa_t2:.2f}", delta=f"{pa_t2 - t2_meta['pa']:.2f} vs Meta")
+                    
+                    m4, m5, _ = st.columns(3)
+                    m4.metric(label="Clientes Atendidos", value=f"{vendas_t2}")
+                    m5.metric(label="Itens Vendidos", value=f"{itens_t2:.0f} un", delta=f"{itens_t2 - t2_meta['itens']:.0f} vs Meta")
                 else:
                     st.info("Turno 2 em andamento ou sem dados registrados.")
 
